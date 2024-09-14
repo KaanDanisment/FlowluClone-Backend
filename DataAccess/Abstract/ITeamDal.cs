@@ -1,5 +1,4 @@
 ﻿using Core.DataAccess.Abstract;
-using Core.Entities.Concrete;
 using Entities.Concrete;
 using System;
 using System.Collections.Generic;
@@ -9,8 +8,7 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Abstract
 {
-    public interface IUserDal:IEntityRepository<User>
+    public interface ITeamDal: IEntityRepository<Team>
     {
-        List<OperationClaim> GetClaims(User user);
     }
 }

@@ -32,11 +32,14 @@ namespace Business.DependencyResolvers.Autofac
             builder.RegisterType<AuthManager>().As<IAuthService>();
             builder.RegisterType<JwtHelper>().As<ITokenHelper>();
 
+            builder.RegisterType<TeamManager>().As<ITeamService>();
+            builder.RegisterType<EfTeamDal>().As<ITeamDal>();
+            builder.RegisterType<EfTeamMemberDal>().As<ITeamMemberDal>();
+
             builder.Register(context =>
             {
                 var config = new MapperConfiguration(cfg =>
                 {
-                    // AutoMapper profillerinizi burada kaydedin
                     cfg.AddMaps(typeof(AutofacBusinessModule).Assembly);
                 });
 

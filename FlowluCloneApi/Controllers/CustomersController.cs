@@ -8,7 +8,7 @@ namespace FlowluCloneApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles ="Admin,Manager,User")]
     public class CustomersController : ControllerBase
     {
         private ICustomerService _customerService;
@@ -40,6 +40,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("createcustomer")]
+        [Authorize(Roles ="Admin,User")]
         public IActionResult CreateCustomer(Customer customer)
         {
             var result = _customerService.CreateCustomer(customer);
@@ -51,6 +52,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("delete/{id}")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult Delete(int id)
         {
             var result = _customerService.Delete(id);

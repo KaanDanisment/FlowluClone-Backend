@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Business.Constants;
 using DataAccess.Concrete.EntityFramework.Context;
 using Microsoft.EntityFrameworkCore;
+using Entities.Concrete;
 
 namespace Business.Concrete
 {
@@ -20,6 +21,10 @@ namespace Business.Concrete
         public  UserManager(IUserDal userDal)
         {
             _userDal = userDal;
+        }
+        public List<OperationClaim> GetClaims(User user)
+        {
+            return _userDal.GetClaims(user);
         }
 
         public void Add(User user)

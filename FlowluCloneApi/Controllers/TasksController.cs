@@ -50,6 +50,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("createtask")]
+        [Authorize(Roles = "Admin,Manager,User")]
         public IActionResult CreateTask(Task task)
         {
             var result = _taskService.CreateTask(task);
@@ -61,6 +62,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("delete/{id}")]
+        [Authorize(Roles = "Admin,Manager,User")]
         public IActionResult Delete(int id)
         {
             var result = _taskService.Delete(id);
@@ -72,6 +74,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("update")]
+        [Authorize(Roles = "Admin,Manager,User")]
         public IActionResult update(Task task)
         {
             var result = _taskService.Update(task);

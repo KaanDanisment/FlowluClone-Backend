@@ -22,23 +22,32 @@ namespace Business.Concrete
         private IProjectDal _projectDal;
         private ICustomerDal _customerDal;
         private ITaskDal _taskDal;
+        private ITeamMemberDal _teamMemberDal;
+        private ITeamDal _teamDal;
+        private IUserDal _userDal;
         private IHttpContextAccessor _httpContextAccessor;
         private IMapper _mapper;
 
-        public ProjectManager(IProjectDal projectDal,ICustomerDal customerDal,IHttpContextAccessor httpContextAccessor,IMapper mapper,ITaskDal taskDal)
+        public ProjectManager(IProjectDal projectDal, ICustomerDal customerDal, IHttpContextAccessor httpContextAccessor, IMapper mapper, ITaskDal taskDal, ITeamMemberDal teamMemberDal, ITeamDal teamDal, IUserDal userDal)
         {
             _projectDal = projectDal;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
             _customerDal = customerDal;
             _taskDal = taskDal;
+            _teamMemberDal = teamMemberDal;
+            _teamDal = teamDal;
+            _userDal = userDal;
         }
 
         public IDataResult<Project> CreateProject(Project project)
         {
-            var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var user = _userDal.Get(u => u.Id == userId);
+            var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
 
-            project.UserId = int.Parse(userId);
+            project.UserId = team.UserId;
 
             _projectDal.Add(project);
             return new SuccessDataResult<Project>(project,Messages.ProjectAdded);
@@ -64,7 +73,19 @@ namespace Business.Concrete
         public IDataResult<List<ProjectDetailDto>> GetProjects()
         {
             var userId = int.Parse(_httpContextAccessor.HttpContext.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
-            var projects = _projectDal.GetList(p => p.UserId == userId).ToList();
+            var user = _userDal.Get(u => u.Id == userId);
+            var userTeam = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var projects = new List<Project>();
+            if(userTeam != null)
+            {
+                var team = _teamDal.Get(t => t.Id == userTeam.TeamId);
+                projects = _projectDal.GetList(p => p.UserId == team.UserId).ToList();
+            }
+            else
+            {
+                projects = _projectDal.GetList(p => p.UserId == userId).ToList();
+
+            }
             var projectsToReturn = _mapper.Map<List<ProjectDetailDto>>(projects);
 
             foreach(var project in projectsToReturn)
@@ -102,8 +123,12 @@ namespace Business.Concrete
 
         public IResult Update(Project project)
         {
-            var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            project.UserId = int.Parse(userId);
+            var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var user = _userDal.Get(u => u.Id == userId);
+            var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+
+            project.UserId = team.UserId;
             _projectDal.Update(project);
             return new SuccessResult(Messages.ProjectUpdated);
         }

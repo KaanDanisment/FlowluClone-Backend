@@ -18,20 +18,30 @@ namespace Business.Concrete
     {
         private ITaskDal _taskDal;
         private IProjectDal _projectDal;
+        private ITeamMemberDal _teamMemberDal;
+        private ITeamDal _teamDal;
+        private IUserDal _userDal;
         private IHttpContextAccessor _httpContextAccessor;
         private IMapper _mapper;
-        public TaskManager(ITaskDal taskDal, IHttpContextAccessor httpContextAccessor, IProjectDal projectDal,IMapper mapper)
+        public TaskManager(ITaskDal taskDal, IHttpContextAccessor httpContextAccessor, IProjectDal projectDal, IMapper mapper, ITeamMemberDal teamMemberDal, ITeamDal teamDal, IUserDal userDal)
         {
             _taskDal = taskDal;
             _httpContextAccessor = httpContextAccessor;
             _projectDal = projectDal;
             _mapper = mapper;
+            _teamMemberDal = teamMemberDal;
+            _teamDal = teamDal;
+            _userDal = userDal;
         }
 
         public IDataResult<Task> CreateTask(Task task)
         {
-            var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            task.UserId = int.Parse(userId);
+            var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var user = _userDal.Get(u => u.Id == userId);
+            var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+
+            task.UserId = team.UserId;
             _taskDal.Add(task);
             return new SuccessDataResult<Task>(task,Messages.TaskAdded);
         }
@@ -50,7 +60,18 @@ namespace Business.Concrete
         public IDataResult<List<TaskDetailDto>> GetTasks()
         {
             var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var tasks = _taskDal.GetList(t => t.UserId == userId);
+            var user = _userDal.Get(u => u.Id == userId);
+            var tasks = new List<Task>();
+            var userTeam = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            if(userTeam != null)
+            {
+                var team = _teamDal.Get(t => t.Id == userTeam.TeamId);
+                tasks = _taskDal.GetList(t => t.UserId == team.UserId).ToList();
+            }
+            else
+            {
+                tasks = _taskDal.GetList(t => t.UserId == userId).ToList();
+            }
             var tasksToReturn = _mapper.Map<List<TaskDetailDto>>(tasks);
             foreach (var task in tasksToReturn)
             {
@@ -94,8 +115,12 @@ namespace Business.Concrete
 
         public IResult Update(Task task)
         {
-            var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            task.UserId = int.Parse(userId);
+            var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var user = _userDal.Get(u => u.Id == userId);
+            var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+
+            task.UserId = team.UserId;
             if(task == null)
             {
                 new ErrorResult(Messages.TaskNotFound);

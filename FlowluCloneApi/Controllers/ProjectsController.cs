@@ -52,6 +52,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("createproject")]
+        [Authorize(Roles = "Admin,Manager,User")]
         public IActionResult CreateProject(Project project)
         {
             var result = _projectService.CreateProject(project);
@@ -63,6 +64,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("delete/{id}")]
+        [Authorize(Roles = "Admin,Manager,User")]
         public IActionResult Delete(int id)
         {
             var result = _projectService.Delete(id);
@@ -74,6 +76,7 @@ namespace FlowluCloneApi.Controllers
         }
 
         [HttpPost("update")]
+        [Authorize(Roles = "Admin,Manager,User")]
         public IActionResult Update(Project project)
         {
             var result = _projectService.Update(project);

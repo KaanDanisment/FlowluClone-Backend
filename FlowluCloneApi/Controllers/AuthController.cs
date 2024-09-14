@@ -1,4 +1,5 @@
 ﻿using Business.Abstract;
+using Entities.Concrete;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
@@ -11,10 +12,12 @@ namespace FlowluCloneApi.Controllers
     public class AuthController : ControllerBase
     {
         private IAuthService _authService;
+        private ITeamService _teamService;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ITeamService teamService)
         {
             _authService = authService;
+            _teamService = teamService;
         }
 
         [HttpPost("login")]

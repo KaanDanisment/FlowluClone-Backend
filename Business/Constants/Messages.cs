@@ -28,5 +28,18 @@ namespace Business.Constants
         public static string SuccessfulLogin = "Successful Login";
         public static string SuccessfulRegistered = "Successful Registered";
         public static string UserAlreadyExist = "User Already Exist";
+
+        public static string AccessTokenCreted = "Access Token Created Successfully";
+
+        public static string TeamUpdated = "Team Updated Succesfully";
+        public static string TeamNotFound = "User don't have a Team";
+        public static string TeamDeleted = "Team Deleted Successfuly";
+        public static string ExistingUser = "This User already in this Team";
+        public static string UserHaveATeam = "This User already have a Team";
+        public static string UsersAdded = "User Added Team Successfully";
+        public static string UserNotFoundTeam = "User is not in This Team";
+        public static string UserRemoved = "User Removed from Team Successfully";
+        public static string UserAlreadyInAnotherTeam = "This User Already In Another Team";
+        public static string RoleNotFound = "Role Not Found";
     }
 }

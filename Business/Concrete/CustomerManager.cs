@@ -18,20 +18,30 @@ namespace Business.Concrete
         private ICustomerDal _customerDal;
         private IProjectDal _projectDal;
         private ITaskDal _taskDal;
+        private ITeamMemberDal _teamMemberDal;
+        private ITeamDal _teamDal;
+        private IUserDal _userDal;
         private IHttpContextAccessor _httpContextAccessor;
 
-        public CustomerManager(ICustomerDal customerDal,IHttpContextAccessor httpContextAccessor, IProjectDal projectDal, ITaskDal taskDal)
+        public CustomerManager(ICustomerDal customerDal, IHttpContextAccessor httpContextAccessor, IProjectDal projectDal, ITaskDal taskDal, ITeamMemberDal teamMemberDal, ITeamDal teamDal, IUserDal userDal)
         {
             _customerDal = customerDal;
             _projectDal = projectDal;
             _httpContextAccessor = httpContextAccessor;
             _taskDal = taskDal;
+            _teamMemberDal = teamMemberDal;
+            _teamDal = teamDal;
+            _userDal = userDal;
         }
 
         public IDataResult<Customer> CreateCustomer(Customer customer)
         {
-            var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            customer.UserId = int.Parse(userId);
+            var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var user = _userDal.Get(u => u.Id == userId);
+            var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+
+            customer.UserId = team.UserId;
             _customerDal.Add(customer);
             return new SuccessDataResult<Customer>(customer,Messages.CustomerAdded);
         }
@@ -48,10 +58,10 @@ namespace Business.Concrete
 
             if (projects.Count != 0)
             {
-                projects.ForEach(p => _projectDal.Delete(p));
                 var taskId = projects[0].Id;
                 var tasks = _taskDal.GetList(t => t.ProjectId == taskId).ToList();
                 tasks.ForEach(t => _taskDal.Delete(t));
+                projects.ForEach(p => _projectDal.Delete(p));
             }
 
             _customerDal.Delete(customer);
@@ -62,7 +72,18 @@ namespace Business.Concrete
         public IDataResult<List<Customer>> GetCustomers()
         {
             var userId = int.Parse(_httpContextAccessor.HttpContext.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
-            var customers = _customerDal.GetList(c=>c.UserId == userId);
+            var user = _userDal.Get(u => u.Id == userId);
+            var customers = new List<Customer>();
+            var userTeam = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            if (userTeam != null)
+            {
+                var team = _teamDal.Get(t => t.Id == userTeam.TeamId);
+                customers = _customerDal.GetList(c => c.UserId == team.UserId).ToList();
+            }
+            else
+            {
+                customers = _customerDal.GetList(c=>c.UserId == userId);
+            }
 
             return new SuccessDataResult<List<Customer>>(customers);
         }
@@ -76,8 +97,12 @@ namespace Business.Concrete
 
         public IResult Update(Customer customer)
         {
-            var userId = int.Parse(_httpContextAccessor.HttpContext.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
-            customer.UserId = userId;
+            var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var user = _userDal.Get(u => u.Id == userId);
+            var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
+            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+
+            customer.UserId = team.UserId;
             _customerDal.Update(customer);
             return new SuccessResult(Messages.CustomerUpdated);
         }

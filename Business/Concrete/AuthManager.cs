@@ -4,6 +4,7 @@ using Core.Entities.Concrete;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
 using Core.Utilities.Security.jwt;
+using DataAccess.Concrete.EntityFramework.Context;
 using Entities.Dtos;
 using System;
 using System.Collections.Generic;
@@ -26,8 +27,9 @@ namespace Business.Concrete
 
         public IDataResult<AccessToken> CreateAccessToken(User user)
         {
-            var accessToken = _tokenHelper.CreateToken(user);
-            return new SuccessDataResult<AccessToken>(accessToken);
+            var claims = _userService.GetClaims(user);
+            var accessToken = _tokenHelper.CreateToken(user,claims);
+            return new SuccessDataResult<AccessToken>(accessToken, Messages.AccessTokenCreted);
         }
 
         public IDataResult<User> Login(UserLoginDto userLoginDto)
@@ -41,6 +43,34 @@ namespace Business.Concrete
             {
                 return new ErrorDataResult<User>(Messages.PasswordError);
             }
+            using (var context = new FlowluContext())
+            {
+                // Kullanıcının herhangi bir rolü olup olmadığını kontrol et
+                var userHasRole = context.UserOperationClaims.Any(uc => uc.UserId == userToCheck.Id);
+
+                // Eğer rolü yoksa "User" rolü veriyoruz
+                if (!userHasRole)
+                {
+                    var defaultRole = context.OperationClaims.FirstOrDefault(c => c.Name == "User");
+
+                    if (defaultRole != null)
+                    {
+                        var userOperationClaim = new UserOperationClaim
+                        {
+                            UserId = userToCheck.Id,
+                            OperationClaimId = defaultRole.Id
+                        };
+
+                        context.UserOperationClaims.Add(userOperationClaim); // Rol ataması
+                        context.SaveChanges(); // Veritabanına kaydediyoruz
+                    }
+                    else
+                    {
+                        return new ErrorDataResult<User>("Varsayılan 'User' rolü bulunamadı.");
+                    }
+                }
+            }
+
             return new SuccessDataResult<User>(userToCheck,Messages.SuccessfulLogin);
         }
 
@@ -58,6 +88,25 @@ namespace Business.Concrete
                 PasswordSalt = passwordSalt
             };
             _userService.Add(user);
+
+            using (var context = new FlowluContext())
+            {
+                
+                var defaultRole = context.OperationClaims.FirstOrDefault(c => c.Name == "User");
+
+                if (defaultRole != null)
+                {
+                    var userOperationClaim = new UserOperationClaim
+                    {
+                        UserId = user.Id,
+                        OperationClaimId = defaultRole.Id
+                    };
+                    context.UserOperationClaims.Add(userOperationClaim);
+                    context.SaveChanges();
+                }
+                
+            }
+
             return new SuccessDataResult<User>(user, Messages.SuccessfulRegistered);
         }
 
