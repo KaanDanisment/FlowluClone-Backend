@@ -50,6 +50,11 @@ namespace Business.Concrete
 
             using (var context = new FlowluContext())
             {
+                var oldOperationClaim = context.UserOperationClaims.FirstOrDefault(uoc => uoc.UserId == userId);
+                if (oldOperationClaim != null)
+                {
+                    context.UserOperationClaims.Remove(oldOperationClaim);
+                }
                 var adminRole = context.OperationClaims.FirstOrDefault(oc => oc.Name == "Admin");
                 if (adminRole != null)
                 {

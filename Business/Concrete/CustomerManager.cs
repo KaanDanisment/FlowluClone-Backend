@@ -39,9 +39,16 @@ namespace Business.Concrete
             var userId = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
             var user = _userDal.Get(u => u.Id == userId);
             var teamMember = _teamMemberDal.Get(tm => tm.UserEmail == user.Email);
-            var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+            if(teamMember == null)
+            {
+                customer.UserId = userId;
+            }
+            else
+            {
+                var team = _teamDal.Get(t => t.Id == teamMember.TeamId);
+                customer.UserId = team.UserId;
+            }
 
-            customer.UserId = team.UserId;
             _customerDal.Add(customer);
             return new SuccessDataResult<Customer>(customer,Messages.CustomerAdded);
         }
